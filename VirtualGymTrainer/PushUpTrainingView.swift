@@ -18,7 +18,9 @@ struct PushUpTrainingView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            // Camera background
+            CameraViewRepresentable()
+                .ignoresSafeArea()
 
             VStack(spacing: 0) {
                 HStack {
