@@ -10,17 +10,25 @@ struct PushUpTrainingView: View {
     @Binding var isPresented: Bool
     @State private var elapsedTime = 0
     @State private var timer: Timer?
-    @State private var tips: [FormTip] = [
-        FormTip(message: "✓ Shoulders aligned", isGood: true),
-        FormTip(message: "✓ Body is straight", isGood: true),
-        FormTip(message: "✓ Good depth", isGood: true)
-    ]
+    @State private var tips: [FormTip] = []
+    @State private var isDetecting = true
+
+    private func handlePoseDetected(_ feedback: [FormFeedback]) {
+        tips = feedback.map { FormTip(message: $0.message, isGood: $0.isGood) }
+    }
+
+    private func handlePoseFailed() {
+        isDetecting = false
+    }
 
     var body: some View {
         ZStack {
-            // Camera background
-            CameraViewRepresentable()
-                .ignoresSafeArea()
+            // Camera background with pose detection
+            CameraViewRepresentable(
+                onPoseDetected: handlePoseDetected,
+                onPoseFailed: handlePoseFailed
+            )
+            .ignoresSafeArea()
 
             VStack(spacing: 0) {
                 HStack {
@@ -48,16 +56,30 @@ struct PushUpTrainingView: View {
                         .font(.headline)
                         .foregroundColor(.white)
 
-                    VStack(alignment: .leading, spacing: 12) {
-                        ForEach(tips) { tip in
-                            TipRow(icon: tip.isGood ? "checkmark.circle.fill" : "exclamationmark.circle.fill",
-                                  text: tip.message,
-                                  color: tip.isGood ? .green : .orange)
+                    if tips.isEmpty {
+                        VStack {
+                            ProgressView()
+                                .tint(.white)
+                            Text("Analyzing your form...")
+                                .font(.caption)
+                                .foregroundColor(.gray)
                         }
+                        .padding()
+                        .frame(height: 100)
+                        .background(Color.white.opacity(0.1))
+                        .cornerRadius(12)
+                    } else {
+                        VStack(alignment: .leading, spacing: 12) {
+                            ForEach(tips) { tip in
+                                TipRow(icon: tip.isGood ? "checkmark.circle.fill" : "exclamationmark.circle.fill",
+                                      text: tip.message,
+                                      color: tip.isGood ? .green : .orange)
+                            }
+                        }
+                        .padding()
+                        .background(Color.white.opacity(0.1))
+                        .cornerRadius(12)
                     }
-                    .padding()
-                    .background(Color.white.opacity(0.1))
-                    .cornerRadius(12)
                 }
                 .padding()
                 .background(Color.black.opacity(0.2))
