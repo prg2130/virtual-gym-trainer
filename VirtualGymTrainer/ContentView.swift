@@ -15,10 +15,15 @@ struct Machine: Identifiable, Codable {
 }
 
 struct ContentView: View {
+    @State private var selectedMachine: String?
+    @State private var showAlert = false
+    @State private var showTraining = false
+
     let machines = [
         Machine(id: "1", name: "Lat Pulldown", description: "Back and biceps", targetMuscles: ["Latissimus Dorsi", "Biceps"]),
         Machine(id: "2", name: "Chest Press", description: "Chest, shoulders, triceps", targetMuscles: ["Chest", "Shoulders"]),
-        Machine(id: "3", name: "Leg Press", description: "Quads, hamstrings, glutes", targetMuscles: ["Quadriceps", "Hamstrings"])
+        Machine(id: "3", name: "Leg Press", description: "Quads, hamstrings, glutes", targetMuscles: ["Quadriceps", "Hamstrings"]),
+        Machine(id: "4", name: "Push-up", description: "Chest, shoulders, triceps, core", targetMuscles: ["Chest", "Shoulders", "Triceps"])
     ]
 
     var body: some View {
@@ -37,7 +42,12 @@ struct ContentView: View {
                 ScrollView {
                     VStack(spacing: 12) {
                         ForEach(machines) { machine in
-                            MachineCard(machine: machine)
+                            Button(action: {
+                                selectedMachine = machine.name
+                                showAlert = true
+                            }) {
+                                MachineCard(machine: machine)
+                            }
                         }
                     }
                     .padding(.horizontal)
@@ -46,6 +56,19 @@ struct ContentView: View {
                 Spacer()
             }
             .padding(.vertical)
+            .alert("Start Training?", isPresented: $showAlert) {
+                Button("Start") {
+                    if selectedMachine == "Push-up" {
+                        showTraining = true
+                    }
+                }
+                Button("Cancel", role: .cancel) { }
+            } message: {
+                Text("Ready to train \(selectedMachine ?? "")?")
+            }
+            .sheet(isPresented: $showTraining) {
+                PushUpTrainingView(isPresented: $showTraining)
+            }
         }
     }
 }
