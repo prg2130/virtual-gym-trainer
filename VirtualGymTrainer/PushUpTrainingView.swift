@@ -19,6 +19,8 @@ struct PushUpTrainingView: View {
 
     private func handlePoseFailed() {
         isDetecting = false
+        // Nobody in view: drop the old tips instead of leaving stale ones on screen.
+        tips = []
     }
 
     var body: some View {
