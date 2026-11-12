@@ -15,9 +15,23 @@ struct PushUpTrainingView: View {
     @State private var isDetecting = true
     @State private var useFrontCamera = true
     @State private var repCount = 0
+    @State private var shallowRepCount = 0
+    @State private var voiceCoach = VoiceCoach()
+    @AppStorage("voiceCoachingMuted") private var isVoiceMuted = false
 
     private func handlePoseDetected(_ feedback: [FormFeedback], repCount: Int) {
+        if repCount > self.repCount {
+            voiceCoach.announceRep(repCount)
+        }
         self.repCount = repCount
+
+        let shallowReps = PoseDetectionManager.shared.shallowRepCount
+        if shallowReps > shallowRepCount {
+            voiceCoach.announceNow("Go deeper")
+        }
+        shallowRepCount = shallowReps
+
+        voiceCoach.update(cues: feedback.compactMap { $0.spokenCue })
         tips = feedback.map { FormTip(message: $0.message, isGood: $0.isGood) }
     }
 
@@ -25,6 +39,7 @@ struct PushUpTrainingView: View {
         isDetecting = false
         // Nobody in view: drop the old tips instead of leaving stale ones on screen.
         tips = []
+        voiceCoach.update(cues: [])
     }
 
     var body: some View {
@@ -61,6 +76,21 @@ struct PushUpTrainingView: View {
                         .cornerRadius(8)
                     }
                     .accessibilityLabel(useFrontCamera ? "Switch to back camera" : "Switch to front camera")
+
+                    Button(action: {
+                        isVoiceMuted.toggle()
+                        voiceCoach.isMuted = isVoiceMuted
+                    }) {
+                        Image(systemName: isVoiceMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                            .font(.caption)
+                            .foregroundColor(.white)
+                            .frame(width: 20)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(Color.black.opacity(0.5))
+                            .cornerRadius(8)
+                    }
+                    .accessibilityLabel(isVoiceMuted ? "Turn voice coaching on" : "Turn voice coaching off")
 
                     Text("\(elapsedTime)s")
                         .font(.caption)
@@ -142,9 +172,12 @@ struct PushUpTrainingView: View {
             }
         }
         .onAppear {
+            voiceCoach.isMuted = isVoiceMuted
+            voiceCoach.start()
             startTimer()
         }
         .onDisappear {
+            voiceCoach.stop()
             stopTimer()
         }
     }

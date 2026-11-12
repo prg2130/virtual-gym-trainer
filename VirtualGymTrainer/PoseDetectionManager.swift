@@ -26,19 +26,34 @@ class PoseDetectionManager {
     private(set) var repCount = 0
     private var reachedBottom = false
 
+    // Shallow reps: came down part of the way and went back up without reaching the bottom.
+    private(set) var shallowRepCount = 0
+    private var lowestElbowAngle: CGFloat = 180
+    private let shallowDipAngle: CGFloat = 135
+
     /// Call when a new training session starts.
     func resetSession() {
         repCount = 0
+        shallowRepCount = 0
         reachedBottom = false
+        lowestElbowAngle = 180
         resetSmoothing()
     }
 
     private func updateRepCount(elbowAngle: CGFloat) {
+        lowestElbowAngle = min(lowestElbowAngle, elbowAngle)
+
         if elbowAngle <= bottomElbowAngle {
             reachedBottom = true
-        } else if elbowAngle >= topElbowAngle, reachedBottom {
+        } else if elbowAngle >= topElbowAngle {
+            if reachedBottom {
+                repCount += 1
+            } else if lowestElbowAngle <= shallowDipAngle {
+                // A real dip, but not deep enough to count.
+                shallowRepCount += 1
+            }
             reachedBottom = false
-            repCount += 1
+            lowestElbowAngle = 180
         }
     }
 
@@ -86,7 +101,7 @@ class PoseDetectionManager {
     func analyzePushUpForm(joints: Joints) -> [FormFeedback] {
         guard let side = bestVisibleSide(in: joints) else {
             resetSmoothing()
-            return [FormFeedback(message: "⚠️ Step back so your whole body is in view, side-on to the camera", isGood: false)]
+            return [FormFeedback(message: "⚠️ Step back so your whole body is in view, side-on to the camera", isGood: false, spokenCue: "Step back so I can see your whole body")]
         }
 
         // Standing or sitting up: the torso is closer to vertical than horizontal.
@@ -106,9 +121,9 @@ class PoseDetectionManager {
             if bodyAngle >= 160 {
                 feedback.append(FormFeedback(message: "✓ Body is straight", isGood: true))
             } else if hipIsBelowLine(hip: side.hip, shoulder: side.shoulder, lower: lowerPoint) {
-                feedback.append(FormFeedback(message: "⚠️ Hips are sagging – tighten your core", isGood: false))
+                feedback.append(FormFeedback(message: "⚠️ Hips are sagging – tighten your core", isGood: false, spokenCue: "Hips sagging. Tighten your core"))
             } else {
-                feedback.append(FormFeedback(message: "⚠️ Hips are too high – lower them", isGood: false))
+                feedback.append(FormFeedback(message: "⚠️ Hips are too high – lower them", isGood: false, spokenCue: "Lower your hips"))
             }
         } else {
             smoothedBodyAngle = nil
@@ -223,6 +238,7 @@ class PoseDetectionManager {
         smoothedBodyAngle = nil
         // Lost sight of the push-up: don't let a half-seen rep count later.
         reachedBottom = false
+        lowestElbowAngle = 180
     }
 }
 
@@ -230,4 +246,6 @@ struct FormFeedback: Identifiable {
     let id = UUID()
     let message: String
     let isGood: Bool
+    /// What the voice coach says for this tip, if anything.
+    var spokenCue: String? = nil
 }
