@@ -3,7 +3,7 @@ import AVFoundation
 
 struct CameraViewRepresentable: UIViewControllerRepresentable {
     var cameraPosition: AVCaptureDevice.Position = .front
-    var onPoseDetected: ([FormFeedback]) -> Void
+    var onPoseDetected: ([FormFeedback], Int) -> Void
     var onPoseFailed: () -> Void
 
     func makeUIViewController(context: Context) -> CameraViewController {
@@ -22,16 +22,16 @@ struct CameraViewRepresentable: UIViewControllerRepresentable {
     }
 
     class Coordinator: NSObject, CameraViewControllerDelegate {
-        let onPoseDetected: ([FormFeedback]) -> Void
+        let onPoseDetected: ([FormFeedback], Int) -> Void
         let onPoseFailed: () -> Void
 
-        init(onPoseDetected: @escaping ([FormFeedback]) -> Void, onPoseFailed: @escaping () -> Void) {
+        init(onPoseDetected: @escaping ([FormFeedback], Int) -> Void, onPoseFailed: @escaping () -> Void) {
             self.onPoseDetected = onPoseDetected
             self.onPoseFailed = onPoseFailed
         }
 
-        func didDetectPose(_ feedback: [FormFeedback]) {
-            onPoseDetected(feedback)
+        func didDetectPose(_ feedback: [FormFeedback], repCount: Int) {
+            onPoseDetected(feedback, repCount)
         }
 
         func didFailPoseDetection() {

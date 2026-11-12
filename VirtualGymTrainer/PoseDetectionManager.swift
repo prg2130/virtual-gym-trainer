@@ -18,6 +18,30 @@ class PoseDetectionManager {
     private var smoothedBodyAngle: CGFloat?
     private let smoothing: CGFloat = 0.4
 
+    // Elbow angles (degrees) that define the bottom and top of a push-up.
+    private let bottomElbowAngle: CGFloat = 100
+    private let topElbowAngle: CGFloat = 155
+
+    // Rep counting: a rep is one trip down to the bottom and back up to the top.
+    private(set) var repCount = 0
+    private var reachedBottom = false
+
+    /// Call when a new training session starts.
+    func resetSession() {
+        repCount = 0
+        reachedBottom = false
+        resetSmoothing()
+    }
+
+    private func updateRepCount(elbowAngle: CGFloat) {
+        if elbowAngle <= bottomElbowAngle {
+            reachedBottom = true
+        } else if elbowAngle >= topElbowAngle, reachedBottom {
+            reachedBottom = false
+            repCount += 1
+        }
+    }
+
     /// `orientation` describes how the camera buffer is rotated for a phone held in
     /// portrait: `.leftMirrored` for the front camera, `.right` for the back camera.
     func detectPose(from pixelBuffer: CVPixelBuffer,
@@ -96,9 +120,11 @@ class PoseDetectionManager {
             let rawAngle = angle(at: elbow, from: side.shoulder, to: wrist)
             let elbowAngle = smooth(rawAngle, previous: &smoothedElbowAngle)
 
-            if elbowAngle <= 100 {
+            updateRepCount(elbowAngle: elbowAngle)
+
+            if elbowAngle <= bottomElbowAngle {
                 feedback.append(FormFeedback(message: "✓ Good depth – push back up", isGood: true))
-            } else if elbowAngle >= 155 {
+            } else if elbowAngle >= topElbowAngle {
                 feedback.append(FormFeedback(message: "✓ Arms extended – lower your chest", isGood: true))
             } else {
                 feedback.append(FormFeedback(message: "⚠️ Go deeper – bend elbows to 90°", isGood: false))
@@ -195,6 +221,8 @@ class PoseDetectionManager {
     private func resetSmoothing() {
         smoothedElbowAngle = nil
         smoothedBodyAngle = nil
+        // Lost sight of the push-up: don't let a half-seen rep count later.
+        reachedBottom = false
     }
 }
 

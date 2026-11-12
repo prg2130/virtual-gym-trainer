@@ -14,8 +14,10 @@ struct PushUpTrainingView: View {
     @State private var tips: [FormTip] = []
     @State private var isDetecting = true
     @State private var useFrontCamera = true
+    @State private var repCount = 0
 
-    private func handlePoseDetected(_ feedback: [FormFeedback]) {
+    private func handlePoseDetected(_ feedback: [FormFeedback], repCount: Int) {
+        self.repCount = repCount
         tips = feedback.map { FormTip(message: $0.message, isGood: $0.isGood) }
     }
 
@@ -74,9 +76,25 @@ struct PushUpTrainingView: View {
                 Spacer()
 
                 VStack(spacing: 16) {
-                    Text("Live Form Analysis")
-                        .font(.headline)
-                        .foregroundColor(.white)
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("Live Form Analysis")
+                            .font(.headline)
+                            .foregroundColor(.white)
+
+                        Spacer()
+
+                        Text("\(repCount)")
+                            .font(.system(size: 44, weight: .bold, design: .rounded))
+                            .monospacedDigit()
+                            .foregroundColor(.white)
+                            .contentTransition(.numericText())
+                            .animation(.default, value: repCount)
+                        Text(repCount == 1 ? "rep" : "reps")
+                            .font(.subheadline)
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("Live form analysis, \(repCount) \(repCount == 1 ? "rep" : "reps")")
 
                     if tips.isEmpty {
                         VStack {

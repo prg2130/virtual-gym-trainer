@@ -2,7 +2,7 @@ import AVFoundation
 import UIKit
 
 protocol CameraViewControllerDelegate: AnyObject {
-    func didDetectPose(_ feedback: [FormFeedback])
+    func didDetectPose(_ feedback: [FormFeedback], repCount: Int)
     func didFailPoseDetection()
 }
 
@@ -15,6 +15,7 @@ class CameraViewController: UIViewController, AVCaptureVideoDataOutputSampleBuff
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .black
+        PoseDetectionManager.shared.resetSession()
         setupCamera()
     }
 
@@ -123,8 +124,9 @@ class CameraViewController: UIViewController, AVCaptureVideoDataOutputSampleBuff
 
             // Analyze push-up form
             let feedback = PoseDetectionManager.shared.analyzePushUpForm(joints: joints)
+            let repCount = PoseDetectionManager.shared.repCount
             DispatchQueue.main.async {
-                self?.delegate?.didDetectPose(feedback)
+                self?.delegate?.didDetectPose(feedback, repCount: repCount)
             }
         }
     }
