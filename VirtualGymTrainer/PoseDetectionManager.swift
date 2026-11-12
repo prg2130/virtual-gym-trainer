@@ -18,9 +18,12 @@ class PoseDetectionManager {
     private var smoothedBodyAngle: CGFloat?
     private let smoothing: CGFloat = 0.4
 
-    func detectPose(from pixelBuffer: CVPixelBuffer, completion: @escaping (Joints?) -> Void) {
-        // Front camera held in portrait: the buffer arrives rotated and mirrored.
-        let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: .leftMirrored)
+    /// `orientation` describes how the camera buffer is rotated for a phone held in
+    /// portrait: `.leftMirrored` for the front camera, `.right` for the back camera.
+    func detectPose(from pixelBuffer: CVPixelBuffer,
+                    orientation: CGImagePropertyOrientation = .leftMirrored,
+                    completion: @escaping (Joints?) -> Void) {
+        let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: orientation)
         let request = VNDetectHumanBodyPoseRequest()
 
         // The buffer is landscape; the upright image has width and height swapped.

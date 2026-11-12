@@ -1,4 +1,5 @@
 import SwiftUI
+import AVFoundation
 
 struct FormTip: Identifiable {
     let id = UUID()
@@ -12,6 +13,7 @@ struct PushUpTrainingView: View {
     @State private var timer: Timer?
     @State private var tips: [FormTip] = []
     @State private var isDetecting = true
+    @State private var useFrontCamera = true
 
     private func handlePoseDetected(_ feedback: [FormFeedback]) {
         tips = feedback.map { FormTip(message: $0.message, isGood: $0.isGood) }
@@ -27,6 +29,7 @@ struct PushUpTrainingView: View {
         ZStack {
             // Camera background with pose detection
             CameraViewRepresentable(
+                cameraPosition: useFrontCamera ? .front : .back,
                 onPoseDetected: handlePoseDetected,
                 onPoseFailed: handlePoseFailed
             )
@@ -39,6 +42,23 @@ struct PushUpTrainingView: View {
                         .foregroundColor(.white)
 
                     Spacer()
+
+                    Button(action: {
+                        useFrontCamera.toggle()
+                        tips = []
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "arrow.triangle.2.circlepath.camera.fill")
+                            Text(useFrontCamera ? "Front" : "Back")
+                        }
+                        .font(.caption)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.black.opacity(0.5))
+                        .cornerRadius(8)
+                    }
+                    .accessibilityLabel(useFrontCamera ? "Switch to back camera" : "Switch to front camera")
 
                     Text("\(elapsedTime)s")
                         .font(.caption)
